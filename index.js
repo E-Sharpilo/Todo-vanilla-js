@@ -30,7 +30,6 @@ function creator(el, content, htmlClass) {
   return container
 };
 
-//#region Create HTML
 
 const container = creator('section', null, 'todoapp');
 
@@ -104,7 +103,6 @@ footer.appendChild(clearCompleted)
 
 root.appendChild(container);
 
-//#endregion Create HTML
 
 function createLi(todo) {
   const li = document.createElement('li');
@@ -129,8 +127,6 @@ function createLi(todo) {
 
   const destroyButton = creator('button', null, 'destroy')
   div.appendChild(destroyButton)
-  // const edditButton = creator('button', null, 'eddit')
-  // div.appendChild(edditButton)
 
 
 
@@ -230,10 +226,6 @@ const handleClick = (event) => {
     changeStatus(todoId)
   }
 
-  // if (event.target.classList.contains('item-label')) {
-  //   console.log('edit');
-  // }
-
   if (event.target.classList.contains('destroy')) {
     const todoId = event.target.closest('li').dataset.key
     deleteTodo(todoId)
@@ -282,40 +274,8 @@ const handleToggleAll = (event) => {
   }
 }
 
-// var double = function () { console.log(this.id + ' double') },
-//   single = function () { console.log(this.id + ' single') };
-
-// function makeDoubleClick(doubleClickCallback, singleClickCallback) {
-//   return (function () {
-//     var clicks = 0,
-//       timeout;
-
-//     return function () {
-//       var me = this;
-//       clicks++;
-//       if (clicks == 1) {
-//         timeout = setTimeout(function () {
-//           singleClickCallback && singleClickCallback.apply(me, arguments);
-//           clicks = 0;
-//         }, 100);
-//       } else {
-//         clearTimeout(timeout);
-//         doubleClickCallback && doubleClickCallback.apply(me, arguments);
-//         clicks = 0;
-//       }
-//     };
-//   }());
-// }
-// todoList.addEventListener('click', makeDoubleClick(double, single));
-
 todoList.addEventListener('click', handleClick);
 toggleAllLabel.addEventListener('click', handleToggleAll)
 form.addEventListener('submit', handleSubmit);
 filters.addEventListener('click', handleFilter)
 clearCompleted.addEventListener('click', handleClearCompleted)
-
-
-// todoList.addEventListener('dblclick', event => {
-//   console.log('dblclick');
-// })
-
