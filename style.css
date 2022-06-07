@@ -294,6 +294,33 @@ body {
   display: block;
 }
 
+/* .todo-list li .eddit {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 60px;
+  bottom: 0;
+  width: 40px;
+  height: 40px;
+  margin: auto 0;
+  font-size: 20px;
+  color: #cc9a9a;
+  margin-bottom: 11px;
+  transition: color 0.2s ease-out;
+}
+
+.todo-list li .eddit:hover {
+  color: #af5b5e;
+}
+
+.todo-list li .eddit:after {
+  content: "edit";
+}
+
+.todo-list li:hover .eddit {
+  display: block;
+} */
+
 .filters {
   margin: 0;
   padding: 0;
@@ -320,7 +347,7 @@ body {
   border-color: rgba(175, 47, 47, 0.1);
 }
 
-.filters li a.selected {
+.filters li.selected a {
   border-color: rgba(175, 47, 47, 0.2);
 }
 
