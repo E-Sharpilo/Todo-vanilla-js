@@ -18,9 +18,6 @@ let todos = [
   }
 ];
 
-
-
-
 function creator(el, content, htmlClass) {
   const container = document.createElement(el)
   if (htmlClass) {
@@ -30,7 +27,42 @@ function creator(el, content, htmlClass) {
   return container
 };
 
+function createLi(todo) {
+  const li = document.createElement('li');
+  const isCompleted = todo.completed ? 'completed' : '';
 
+  li.classList = `${isCompleted}`;
+  li.setAttribute('data-key', todo.id)
+
+
+  const div = creator('div', null, 'view')
+  const inputToggle = creator('input', null, 'toggle');
+  inputToggle.setAttribute('type', 'checkbox')
+  inputToggle.setAttribute('id', todo.id)
+  if (isCompleted) {
+    inputToggle.setAttribute('checked', true)
+  }
+  div.appendChild(inputToggle)
+
+  const todoLabel = creator('div', todo.title, 'item-label')
+  div.appendChild(todoLabel)
+
+  const destroyButton = creator('button', null, 'destroy')
+  div.appendChild(destroyButton)
+
+
+
+  const input = creator('input', null, 'edit')
+
+
+  li.appendChild(div)
+  li.appendChild(input)
+
+  return li
+}
+
+
+//#region HTML
 const container = creator('section', null, 'todoapp');
 
 
@@ -103,40 +135,38 @@ footer.appendChild(clearCompleted)
 
 root.appendChild(container);
 
-
-function createLi(todo) {
-  const li = document.createElement('li');
-  const isCompleted = todo.completed ? 'completed' : '';
-
-  li.classList = `${isCompleted}`;
-  li.setAttribute('data-key', todo.id)
+//#endregion
 
 
-  const div = creator('div', null, 'view')
-  const inputToggle = creator('input', null, 'toggle');
-  inputToggle.setAttribute('type', 'checkbox')
-  inputToggle.setAttribute('id', todo.id)
-  if (isCompleted) {
-    inputToggle.setAttribute('checked', true)
+function partialRender(todoId, action) {
+  const dataKey = document.querySelector(`[data-key="${todoId}"]`)
+
+  switch (action) {
+    case 'changeStatus':
+      dataKey.classList.toggle('completed')
+      todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+      break;
+
+    case 'deleteTodo':
+      dataKey.remove();
+      break;
+
+    case 'addTodo':
+      todoList.appendChild(createLi(todos[todoId]))
+      break;
+
+    case 'changeTitle':
+      if (todos.find(el => el.id === +todoId).completed === true) {
+        dataKey.classList = 'completed'
+      } else {
+        dataKey.removeAttribute('class')
+      }
+      dataKey.querySelector('.item-label').innerText = todos.find(el => el.id === +todoId).title;
+      break;
+      
+    default:
+      break;
   }
-  div.appendChild(inputToggle)
-
-  const todoLabel = creator('label', todo.title, 'item-label')
-  todoLabel.setAttribute('for', todo.id)
-  div.appendChild(todoLabel)
-
-  const destroyButton = creator('button', null, 'destroy')
-  div.appendChild(destroyButton)
-
-
-
-  const input = creator('input', null, 'edit')
-
-
-  li.appendChild(div)
-  li.appendChild(input)
-
-  return li
 }
 
 
@@ -160,21 +190,25 @@ function addTodo(text) {
   }
 
   todos.push(todo)
-  clearRender(todoList)
-  render(todos)
+  partialRender(todos.length - 1, 'addTodo')
 }
 
 function changeStatus(todoId) {
   const index = todos.findIndex(item => item.id === +todoId)
   todos[index].completed = !todos[index].completed;
-  clearRender(todoList)
-  render(todos)
+
+  if (todos.filter(todo => todo.completed === false).length === 0) {
+    toggleAllInput.setAttribute('checked', true)
+  }
+  if (todos.filter(todo => todo.completed === false).length !== 0) {
+    toggleAllInput.removeAttribute('checked')
+  }
+  partialRender(todoId, 'changeStatus')
 }
 
 function deleteTodo(todoId) {
   todos = todos.filter(el => el.id !== +todoId)
-  clearRender(todoList)
-  render(todos)
+  partialRender(todoId, 'deleteTodo')
 }
 
 function countTodo(todos) {
@@ -192,6 +226,7 @@ function filterTodo(todos, bool) {
 function toggleAllComplete() {
   if (todos.filter(todo => !todo.completed).length === 0) {
     todos.forEach(todo => todo.completed = false);
+    toggleAllInput.setAttribute('checked', true)
   } else {
     todos.forEach(todo => todo.completed = true);
   }
@@ -204,6 +239,12 @@ function clearComplete() {
   todos = todos.filter(todo => todo.completed === false)
   clearRender(todoList)
   render(todos)
+}
+
+function changeTitleTodo(todoId, inputValue) {
+  const index = todos.findIndex(item => item.id === +todoId)
+  todos[index].title = inputValue;
+  partialRender(todoId, 'changeTitle');
 }
 
 
@@ -265,7 +306,8 @@ const handleClearCompleted = () => {
 }
 
 const handleDoubleClick = (event) => {
-  console.log('dblclick');
+  const div = event.target.closest('li')
+  div.classList = 'editing'
 }
 
 const handleToggleAll = (event) => {
@@ -274,6 +316,21 @@ const handleToggleAll = (event) => {
   }
 }
 
+const handleEdit = (event) => {
+  if (event.target.classList.contains('edit')) {
+    event.target.addEventListener('keydown', event => {
+      if (event.target.value.trim() !== '' && event.keyCode === 13) {
+        const todoId = event.target.closest('li').dataset.key
+        changeTitleTodo(todoId, event.target.value)
+      } 
+    })
+  };
+}
+
+
+
+todoList.addEventListener('click', handleEdit);
+todoList.addEventListener('dblclick', handleDoubleClick);
 todoList.addEventListener('click', handleClick);
 toggleAllLabel.addEventListener('click', handleToggleAll)
 form.addEventListener('submit', handleSubmit);
