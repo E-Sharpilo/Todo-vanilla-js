@@ -199,8 +199,7 @@ function changeStatus(todoId) {
 
   if (todos.filter(todo => todo.completed === false).length === 0) {
     toggleAllInput.setAttribute('checked', true)
-  }
-  if (todos.filter(todo => todo.completed === false).length !== 0) {
+  } else {
     toggleAllInput.removeAttribute('checked')
   }
   partialRender(todoId, 'changeStatus')
@@ -224,12 +223,20 @@ function filterTodo(todos, bool) {
 
 
 function toggleAllComplete() {
+
   if (todos.filter(todo => !todo.completed).length === 0) {
     todos.forEach(todo => todo.completed = false);
     toggleAllInput.setAttribute('checked', true)
   } else {
     todos.forEach(todo => todo.completed = true);
+    toggleAllInput.setAttribute('checked', true)
   }
+
+
+  if (todos.filter(todo => todo.completed === false).length !== 0) {
+    toggleAllInput.removeAttribute('checked')
+  }
+
 
   clearRender(todoList);
   render(todos)
@@ -327,7 +334,7 @@ const handleEdit = (event) => {
   };
 }
 
-
+console.log(getComputedStyle(toggleAllLabel, ':before').color);
 
 todoList.addEventListener('click', handleEdit);
 todoList.addEventListener('dblclick', handleDoubleClick);
