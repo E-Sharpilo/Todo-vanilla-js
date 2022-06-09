@@ -163,7 +163,7 @@ function partialRender(todoId, action) {
       }
       dataKey.querySelector('.item-label').innerText = todos.find(el => el.id === +todoId).title;
       break;
-      
+
     default:
       break;
   }
@@ -329,12 +329,22 @@ const handleEdit = (event) => {
       if (event.target.value.trim() !== '' && event.keyCode === 13) {
         const todoId = event.target.closest('li').dataset.key
         changeTitleTodo(todoId, event.target.value)
-      } 
+      }
     })
+
+    const input = event.target;
+    input.onblur = function () {
+      if (input.closest('.editing')) {
+        if (input.value.trim() !== '') {
+          const todoId = input.closest('li').dataset.key
+          changeTitleTodo(todoId, input.value)
+        } else {
+          input.closest('.editing').classList = 'view'
+        }
+      }
+    }
   };
 }
-
-console.log(getComputedStyle(toggleAllLabel, ':before').color);
 
 todoList.addEventListener('click', handleEdit);
 todoList.addEventListener('dblclick', handleDoubleClick);
