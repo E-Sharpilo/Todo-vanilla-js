@@ -39,9 +39,11 @@ function createLi(todo) {
   const inputToggle = creator('input', null, 'toggle');
   inputToggle.setAttribute('type', 'checkbox')
   inputToggle.setAttribute('id', todo.id)
+
   if (isCompleted) {
     inputToggle.setAttribute('checked', true)
   }
+  
   div.appendChild(inputToggle)
 
   const todoLabel = creator('div', todo.title, 'item-label')
@@ -50,17 +52,12 @@ function createLi(todo) {
   const destroyButton = creator('button', null, 'destroy')
   div.appendChild(destroyButton)
 
-
-
   const input = creator('input', null, 'edit')
-
-
   li.appendChild(div)
   li.appendChild(input)
 
   return li
 }
-
 
 //#region HTML
 const container = creator('section', null, 'todoapp');
@@ -95,8 +92,15 @@ mainSection.appendChild(toggleAllInput);
 
 
 const toggleAllLabel = creator('label', 'Mark all as complete');
+const arrowContainer = creator('div', null, 'arrow-container');
+const arrow = creator('img', null)
+arrow.setAttribute('src', './arrow-grey.svg');
+arrowContainer.appendChild(arrow)
+
 toggleAllLabel.setAttribute('for', 'toggle-all');
+
 mainSection.appendChild(toggleAllLabel);
+mainSection.appendChild(arrowContainer)
 
 const todoList = document.createElement('ul')
 todoList.classList.add('todo-list')
@@ -112,6 +116,7 @@ const filters = creator('ul', null, 'filters')
 footer.appendChild(filters)
 
 const all = creator('li', null, 'all');
+all.classList.add('selected')
 const linkAll = creator('a', 'All');
 linkAll.setAttribute('href', '#/')
 all.appendChild(linkAll)
@@ -137,22 +142,45 @@ root.appendChild(container);
 
 //#endregion
 
-
 function partialRender(todoId, action) {
   const dataKey = document.querySelector(`[data-key="${todoId}"]`)
 
   switch (action) {
     case 'changeStatus':
       dataKey.classList.toggle('completed')
-      todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+      if (countTodo(todos) === 0) {
+        todoCount.innerText = ''
+      } else {
+        todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+      }
+      if (countTodo(todos) === todos.length) {
+        clearCompleted.classList = 'hidden'
+      } else {
+        clearCompleted.classList = 'clear-completed'
+      }
+
+      if(completed.classList.contains('selected') || active.classList.contains('selected')) {
+        dataKey.remove()
+      }
+
       break;
 
     case 'deleteTodo':
       dataKey.remove();
+      if (countTodo(todos) === 0) {
+        todoCount.innerText = ''
+      } else {
+        todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+      }
+
+      if (todos.length === 0) {
+        footer.classList = 'hidden'
+      }
       break;
 
     case 'addTodo':
       todoList.appendChild(createLi(todos[todoId]))
+      todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
       break;
 
     case 'changeTitle':
@@ -171,11 +199,14 @@ function partialRender(todoId, action) {
 
 
 function render(todos) {
-  todos.map(todo => {
+  const listTodo = [...todos]
+  listTodo.map(todo => {
     todoList.append(createLi(todo))
   })
 
-  todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+  if (todos.length === 0) {
+    footer.classList.classList = 'hidden';
+  }
 }
 
 function clearRender(node) {
@@ -190,7 +221,12 @@ function addTodo(text) {
   }
 
   todos.push(todo)
-  partialRender(todos.length - 1, 'addTodo')
+  footer.classList = 'footer'
+  if (completed.classList.contains('selected')){
+    todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+  } else {
+    partialRender(todos.length - 1, 'addTodo')
+  }
 }
 
 function changeStatus(todoId) {
@@ -199,9 +235,14 @@ function changeStatus(todoId) {
 
   if (todos.filter(todo => todo.completed === false).length === 0) {
     toggleAllInput.setAttribute('checked', true)
+    arrow.setAttribute('src', './arrow-black.svg');
   } else {
     toggleAllInput.removeAttribute('checked')
+    arrow.setAttribute('src', './arrow-grey.svg');
   }
+
+
+
   partialRender(todoId, 'changeStatus')
 }
 
@@ -227,25 +268,50 @@ function toggleAllComplete() {
   if (todos.filter(todo => !todo.completed).length === 0) {
     todos.forEach(todo => todo.completed = false);
     toggleAllInput.setAttribute('checked', true)
+    arrow.setAttribute('src', './arrow-black.svg');
   } else {
     todos.forEach(todo => todo.completed = true);
     toggleAllInput.setAttribute('checked', true)
+    arrow.setAttribute('src', './arrow-black.svg');
   }
 
 
   if (todos.filter(todo => todo.completed === false).length !== 0) {
     toggleAllInput.removeAttribute('checked')
+    arrow.setAttribute('src', './arrow-grey.svg');
   }
 
+
+  if (countTodo(todos) === todos.length) {
+    clearCompleted.classList = 'hidden'
+  } else {
+    clearCompleted.classList = 'clear-completed'
+  }
 
   clearRender(todoList);
   render(todos)
 }
 
 function clearComplete() {
+  arrow.setAttribute('src', './arrow-grey.svg');
   todos = todos.filter(todo => todo.completed === false)
+  if (countTodo(todos) === todos.length) {
+    clearCompleted.classList = 'hidden'
+  } else {
+    clearCompleted.classList = 'clear-completed'
+  }
+
+  if (todos.length === 0) {
+    footer.classList = 'hidden'
+  }
+
   clearRender(todoList)
-  render(todos)
+
+  if (completed.classList.contains('selected')) {
+    clearRender(todoList)
+  } else {
+    render(todos)
+  }
 }
 
 function changeTitleTodo(todoId, inputValue) {
@@ -282,20 +348,21 @@ const handleClick = (event) => {
 
 const handleFilter = (event) => {
   const target = event.target.innerText
+  const filteredArray = [...todos]
   switch (target) {
     case 'Completed':
       all.classList.remove('selected')
       active.classList.remove('selected')
       completed.classList.add('selected')
       clearRender(todoList)
-      render(filterTodo(todos, true))
+      render(filterTodo(filteredArray, true))
       break;
     case 'Active':
       all.classList.remove('selected')
       completed.classList.remove('selected')
       active.classList.add('selected')
       clearRender(todoList)
-      render(filterTodo(todos, false))
+      render(filterTodo(filteredArray, false))
       break;
 
     default:
@@ -315,6 +382,12 @@ const handleClearCompleted = () => {
 const handleDoubleClick = (event) => {
   const div = event.target.closest('li')
   div.classList = 'editing'
+  const input = div.querySelector('.edit');
+  setTimeout(() => {
+    input.focus()
+  }, 0)
+  const todo = todos.find(todo => todo.id === +div.dataset.key)
+  input.value = todo.title
 }
 
 const handleToggleAll = (event) => {
@@ -323,17 +396,11 @@ const handleToggleAll = (event) => {
   }
 }
 
+
 const handleEdit = (event) => {
   if (event.target.classList.contains('edit')) {
-    event.target.addEventListener('keydown', event => {
-      if (event.target.value.trim() !== '' && event.keyCode === 13) {
-        const todoId = event.target.closest('li').dataset.key
-        changeTitleTodo(todoId, event.target.value)
-      }
-    })
-
-    const input = event.target;
-    input.onblur = function () {
+    const input = event.target
+    input.addEventListener('blur', () => {
       if (input.closest('.editing')) {
         if (input.value.trim() !== '') {
           const todoId = input.closest('li').dataset.key
@@ -342,7 +409,13 @@ const handleEdit = (event) => {
           input.closest('.editing').classList = 'view'
         }
       }
-    }
+    })
+    event.target.addEventListener('keydown', event => {
+      if (event.target.value.trim() !== '' && event.keyCode === 13) {
+        const todoId = event.target.closest('li').dataset.key
+        changeTitleTodo(todoId, event.target.value)
+      }
+    })
   };
 }
 
