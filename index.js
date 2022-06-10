@@ -404,7 +404,7 @@ const handleEdit = (event) => {
       if (input.closest('.editing')) {
         if (input.value.trim() !== '') {
           const todoId = input.closest('li').dataset.key
-          changeTitleTodo(todoId, input.value)
+          changeTitleTodo(todoId, input.value.trim())
         } else {
           input.closest('.editing').classList = 'view'
         }
