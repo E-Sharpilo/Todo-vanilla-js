@@ -148,11 +148,7 @@ function partialRender(todoId, action) {
   switch (action) {
     case 'changeStatus':
       dataKey.classList.toggle('completed')
-      if (countTodo(todos) === 0) {
-        todoCount.innerText = ''
-      } else {
-        todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
-      }
+      todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
       if (countTodo(todos) === todos.length) {
         clearCompleted.classList = 'hidden'
       } else {
@@ -181,6 +177,7 @@ function partialRender(todoId, action) {
     case 'addTodo':
       todoList.appendChild(createLi(todos[todoId]))
       todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+      arrowContainer.classList.remove('hidden')
       break;
 
     case 'changeTitle':
@@ -288,6 +285,8 @@ function toggleAllComplete() {
     clearCompleted.classList = 'clear-completed'
   }
 
+  todoCount.innerText = `${countTodo(todos)} ${countTodo(todos) > 1 ? 'items' : 'item'} left`;
+
   clearRender(todoList);
   render(todos)
 }
@@ -302,7 +301,8 @@ function clearComplete() {
   }
 
   if (todos.length === 0) {
-    footer.classList = 'hidden'
+    footer.classList = 'hidden';
+    arrowContainer.classList.add('hidden')
   }
 
   clearRender(todoList)
