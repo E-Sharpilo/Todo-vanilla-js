@@ -413,7 +413,7 @@ const handleEdit = (event) => {
     event.target.addEventListener('keydown', event => {
       if (event.target.value.trim() !== '' && event.keyCode === 13) {
         const todoId = event.target.closest('li').dataset.key
-        changeTitleTodo(todoId, event.target.value)
+        changeTitleTodo(todoId, event.target.value.trim())
       }
     })
   };
