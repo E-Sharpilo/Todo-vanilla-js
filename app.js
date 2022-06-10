@@ -44,13 +44,14 @@ class Header {
 }
 
 class TodoList {
-  constructor() {
+  constructor(onDelete) {
     this.section = creator('section', null, 'main')
     this.toggleAllInput = creator('input', null, 'toggle-all')
     this.toggleAllLabel = creator('label', 'Mark all as complete');
     this.arrowContainer = creator('div', null, 'arrow-container');
     this.arrowImg = creator('img', null);
     this.todoList = creator('ul', null, 'todo-list');
+    this.onDelete = onDelete
   }
 
   createLi(todo) {
@@ -103,6 +104,7 @@ class TodoList {
     this.section.appendChild(this.toggleAllLabel)
     this.section.appendChild(this.arrowContainer)
     this.section.appendChild(this.todoList)
+    this.todoList.addEventListener('click', this.onDelete)
     this.renderList()
     return this.section
   }
@@ -142,7 +144,7 @@ class Count {
 
   renderCount() {
     this.todoCount.innerHTML = ''
-    return this.todoCount =  creator('span', `${this.countTodo(todos)} items left`, 'todo-count');
+    return this.todoCount = creator('span', `${this.countTodo(todos)} items left`, 'todo-count');
   }
 
   render() {
@@ -162,9 +164,10 @@ class Footer {
     this.clearCompleted = creator('button', 'Clear Completed', 'clear-completed')
   }
 
-  renderCount () {
+  renderCount() {
+    this.footer.removeChild(this.footer.firstChild)
     this.todoCount.renderCount()
-    this.footer.appendChild(this.todoCount.renderCount())
+    this.footer.insertBefore(this.todoCount.renderCount(), this.footer.firstChild)
   }
 
   render() {
@@ -176,7 +179,6 @@ class Footer {
     )
     this.footer.appendChild(this.filters)
     this.footer.appendChild(this.clearCompleted)
-    console.log(this.todoCount, ' render footer');
     return this.footer
   }
 }
@@ -186,16 +188,23 @@ class App {
     this.onSubmit = (event) => {
       event.preventDefault();
       const inputValue = event.target.querySelector('.new-todo');
-      if (inputValue !== '') {
+      if (inputValue.value !== '') {
         this.addTodo(inputValue.value)
         inputValue.value = ''
         inputValue.focus();
       }
     }
+    this.onDelete = (event) => {
+      if (event.target.classList.contains('destroy')) {
+        const todoId = event.target.closest('li').dataset.key
+        this.deleteTodo(todoId)
+        console.log(todoId, 'deleted');
+      }
+    }
     this.root = document.getElementById('root')
     this.container = creator('section', null, 'todoapp')
     this.header = new Header(this.onSubmit)
-    this.todoList = new TodoList()
+    this.todoList = new TodoList(this.onDelete)
     this.footer = new Footer()
   }
 
@@ -209,6 +218,17 @@ class App {
     todos.push(todo)
     this.todoList.renderList(todos)
     this.footer.renderCount()
+    this.root.querySelector('footer').classList = 'footer'
+  }
+
+  deleteTodo(todoId) {
+    todos = todos.filter(el => el.id !== +todoId)
+    this.todoList.renderList(todos)
+    this.footer.renderCount()
+    if (todos.length === 0) {
+      console.log(this.footer);
+      this.root.querySelector('footer').classList = 'hidden'
+    }
   }
 
   render() {
