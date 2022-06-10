@@ -130,16 +130,9 @@ class Link {
   }
 }
 
-
-class Footer {
+class Count {
   constructor() {
-    this.footer = creator('footer', null, 'footer');
     this.todoCount = creator('span', `${this.countTodo(todos)} items left`, 'todo-count')
-    this.filters = creator('ul', null, 'filters')
-    this.all = new Link('#/', 'all', 'All', true)
-    this.active = new Link('#/active', 'active', 'Active')
-    this.completed = new Link('#/completed', 'completed', 'Completed')
-    this.clearCompleted = creator('button', 'Clear Completed', 'clear-completed')
   }
 
   countTodo(todos) {
@@ -147,13 +140,35 @@ class Footer {
     return count
   }
 
-  // renderCount() {
-  //   this.todoCount='';
-  //   this.todoCount = creator('span', `${this.countTodo(todos)} items left`, 'todo-count')
-  // }
+  renderCount() {
+    this.todoCount.innerHTML = ''
+    return this.todoCount =  creator('span', `${this.countTodo(todos)} items left`, 'todo-count');
+  }
 
   render() {
-    this.footer.appendChild(this.todoCount)
+    return this.todoCount
+  }
+}
+
+
+class Footer {
+  constructor() {
+    this.footer = creator('footer', null, 'footer');
+    this.todoCount = new Count();
+    this.filters = creator('ul', null, 'filters')
+    this.all = new Link('#/', 'all', 'All', true)
+    this.active = new Link('#/active', 'active', 'Active')
+    this.completed = new Link('#/completed', 'completed', 'Completed')
+    this.clearCompleted = creator('button', 'Clear Completed', 'clear-completed')
+  }
+
+  renderCount () {
+    this.todoCount.renderCount()
+    this.footer.appendChild(this.todoCount.renderCount())
+  }
+
+  render() {
+    this.footer.appendChild(this.todoCount.render())
     this.filters.append(
       this.all.render(),
       this.active.render(),
@@ -161,6 +176,7 @@ class Footer {
     )
     this.footer.appendChild(this.filters)
     this.footer.appendChild(this.clearCompleted)
+    console.log(this.todoCount, ' render footer');
     return this.footer
   }
 }
@@ -183,7 +199,6 @@ class App {
     this.footer = new Footer()
   }
 
-
   addTodo(text) {
     const todo = {
       title: text,
@@ -192,9 +207,8 @@ class App {
     }
 
     todos.push(todo)
-    // this.todoList.clearRender()
     this.todoList.renderList(todos)
-    
+    this.footer.renderCount()
   }
 
   render() {
