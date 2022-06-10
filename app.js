@@ -44,7 +44,7 @@ class Header {
 }
 
 class TodoList {
-  constructor(onDelete, onChangeStatus) {
+  constructor(onDelete, onChangeStatus, onChangeTitle, handleEdit) {
     this.section = creator('section', null, 'main')
     this.toggleAllInput = creator('input', null, 'toggle-all')
     this.toggleAllLabel = creator('label', 'Mark all as complete');
@@ -53,6 +53,8 @@ class TodoList {
     this.todoList = creator('ul', null, 'todo-list');
     this.onDelete = onDelete
     this.onChangeStatus = onChangeStatus
+    this.onChangeTitle = onChangeTitle
+    this.handleEdit = handleEdit
   }
 
   createLi(todo) {
@@ -88,7 +90,8 @@ class TodoList {
   }
 
   renderList() {
-    this.todoList.innerHTML = ''
+    console.log(todos);
+    this.todoList.querySelectorAll('*').forEach((n) => n.remove())
     const listTodo = [...todos]
     listTodo.map(todo => {
       this.todoList.append(this.createLi(todo))
@@ -107,6 +110,8 @@ class TodoList {
     this.section.appendChild(this.todoList)
     this.todoList.addEventListener('click', this.onDelete)
     this.todoList.addEventListener('click', this.onChangeStatus)
+    this.todoList.addEventListener('dblclick', this.onChangeTitle)
+    this.todoList.addEventListener('click', this.handleEdit)
     this.renderList()
     return this.section
   }
@@ -187,6 +192,7 @@ class Footer {
 
 class App {
   constructor() {
+
     this.onSubmit = (event) => {
       event.preventDefault();
       const inputValue = event.target.querySelector('.new-todo');
@@ -196,23 +202,69 @@ class App {
         inputValue.focus();
       }
     }
+
     this.onDelete = (event) => {
       if (event.target.classList.contains('destroy')) {
         const todoId = event.target.closest('li').dataset.key
         this.deleteTodo(todoId)
-        console.log(todoId, 'deleted');
       }
     }
+
     this.onChangeStatus = (event) => {
       if (event.target.classList.contains('toggle')) {
         const todoId = event.target.closest('li').dataset.key
         this.changeStatus(todoId)
       }
     }
+
+    this.onChangeTitle = (event) => {
+      const div = event.target.closest('li')
+      div.classList = 'editing'
+      const input = div.querySelector('.edit');
+      setTimeout(() => {
+        input.focus()
+      }, 0)
+      const todo = todos.find(todo => todo.id === +div.dataset.key)
+      input.value = todo.title
+    }
+
+    this.handleEdit = (event) => {
+      const input = event.target;
+      if (event.target.classList.contains('edit')) {
+        input.addEventListener('blur', this.onblur)
+        input.addEventListener('keydown', this.onKeyDown)
+      };
+    }
+
+    this.onblur = (event) => {
+      const input = event.target;
+      if (input.closest('.editing')) {
+        if (input.value.trim() !== '') {
+          const todoId = input.closest('li').dataset.key
+          this.changeTitleTodo(todoId, input.value.trim())
+        } else {
+          input.closest('.editing').classList = 'view'
+        }
+      }
+    }
+
+    this.onKeyDown = (event) => {
+      const input = event.target;
+      if (input.value.trim() !== '' && event.keyCode === 13) {
+        const todoId = event.target.closest('li').dataset.key
+        this.changeTitleTodo(todoId, event.target.value.trim())
+      }
+    }
+
     this.root = document.getElementById('root')
     this.container = creator('section', null, 'todo-app')
     this.header = new Header(this.onSubmit)
-    this.todoList = new TodoList(this.onDelete, this.onChangeStatus)
+    this.todoList = new TodoList(
+      this.onDelete,
+      this.onChangeStatus,
+      this.onChangeTitle,
+      this.handleEdit,
+    )
     this.footer = new Footer()
   }
 
@@ -241,9 +293,14 @@ class App {
     this.todoList.renderList(todos)
     this.footer.renderCount()
     if (todos.length === 0) {
-      console.log(this.footer);
       this.root.querySelector('footer').classList = 'hidden'
     }
+  }
+
+  changeTitleTodo(todoId, inputValue) {
+    const index = todos.findIndex(item => item.id === +todoId)
+    todos[index].title = inputValue;
+    this.todoList.renderList(todos)
   }
 
   render() {
