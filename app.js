@@ -44,7 +44,7 @@ class Header {
 }
 
 class TodoList {
-  constructor(onDelete) {
+  constructor(onDelete, onChangeStatus) {
     this.section = creator('section', null, 'main')
     this.toggleAllInput = creator('input', null, 'toggle-all')
     this.toggleAllLabel = creator('label', 'Mark all as complete');
@@ -52,6 +52,7 @@ class TodoList {
     this.arrowImg = creator('img', null);
     this.todoList = creator('ul', null, 'todo-list');
     this.onDelete = onDelete
+    this.onChangeStatus = onChangeStatus
   }
 
   createLi(todo) {
@@ -105,6 +106,7 @@ class TodoList {
     this.section.appendChild(this.arrowContainer)
     this.section.appendChild(this.todoList)
     this.todoList.addEventListener('click', this.onDelete)
+    this.todoList.addEventListener('click', this.onChangeStatus)
     this.renderList()
     return this.section
   }
@@ -201,10 +203,16 @@ class App {
         console.log(todoId, 'deleted');
       }
     }
+    this.onChangeStatus = (event) => {
+      if (event.target.classList.contains('toggle')) {
+        const todoId = event.target.closest('li').dataset.key
+        this.changeStatus(todoId)
+      }
+    }
     this.root = document.getElementById('root')
-    this.container = creator('section', null, 'todoapp')
+    this.container = creator('section', null, 'todo-app')
     this.header = new Header(this.onSubmit)
-    this.todoList = new TodoList(this.onDelete)
+    this.todoList = new TodoList(this.onDelete, this.onChangeStatus)
     this.footer = new Footer()
   }
 
@@ -219,6 +227,13 @@ class App {
     this.todoList.renderList(todos)
     this.footer.renderCount()
     this.root.querySelector('footer').classList = 'footer'
+  }
+
+  changeStatus(todoId) {
+    const index = todos.findIndex(item => item.id === +todoId)
+    todos[index].completed = !todos[index].completed;
+    this.todoList.renderList(todos)
+    this.footer.renderCount()
   }
 
   deleteTodo(todoId) {
