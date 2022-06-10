@@ -26,33 +26,13 @@ function creator(el, content, htmlClass) {
 };
 
 class Header {
-  constructor() {
+  constructor(onSubmit) {
     this.header = creator('header', null, 'header')
     this.title = creator('h1', 'todos');
     this.form = creator('form', null, 'todo-form');
     this.input = creator('input', null, 'new-todo');
-    this.onSubmit = (event) => {
-      event.preventDefault();
-      const inputValue = this.input.value.trim();
-      if (inputValue !== '') {
-        this.addTodo(inputValue)
-        this.input.value = ''
-        this.input.focus();
-        console.log(todos);
-      }
-    }
+    this.onSubmit = onSubmit
   }
-
-  addTodo(text) {
-    const todo = {
-      title: text,
-      completed: false,
-      id: Date.now()
-    }
-
-    todos.push(todo)
-  }
-
   render() {
     this.header.appendChild(this.title)
     this.header.appendChild(this.form)
@@ -106,6 +86,7 @@ class TodoList {
   }
 
   renderList() {
+    this.todoList.innerHTML = ''
     const listTodo = [...todos]
     listTodo.map(todo => {
       this.todoList.append(this.createLi(todo))
@@ -157,7 +138,7 @@ class Footer {
     this.filters = creator('ul', null, 'filters')
     this.all = new Link('#/', 'all', 'All', true)
     this.active = new Link('#/active', 'active', 'Active')
-    this.completed = new Link ('#/completed', 'completed', 'Completed')
+    this.completed = new Link('#/completed', 'completed', 'Completed')
     this.clearCompleted = creator('button', 'Clear Completed', 'clear-completed')
   }
 
@@ -165,6 +146,11 @@ class Footer {
     const count = todos.filter(todo => todo.completed === false).length
     return count
   }
+
+  // renderCount() {
+  //   this.todoCount='';
+  //   this.todoCount = creator('span', `${this.countTodo(todos)} items left`, 'todo-count')
+  // }
 
   render() {
     this.footer.appendChild(this.todoCount)
@@ -179,20 +165,42 @@ class Footer {
   }
 }
 
-
 class App {
   constructor() {
+    this.onSubmit = (event) => {
+      event.preventDefault();
+      const inputValue = event.target.querySelector('.new-todo');
+      if (inputValue !== '') {
+        this.addTodo(inputValue.value)
+        inputValue.value = ''
+        inputValue.focus();
+      }
+    }
     this.root = document.getElementById('root')
     this.container = creator('section', null, 'todoapp')
-    this.header = new Header()
-    this.section = new TodoList()
+    this.header = new Header(this.onSubmit)
+    this.todoList = new TodoList()
     this.footer = new Footer()
+  }
+
+
+  addTodo(text) {
+    const todo = {
+      title: text,
+      completed: false,
+      id: Date.now()
+    }
+
+    todos.push(todo)
+    // this.todoList.clearRender()
+    this.todoList.renderList(todos)
+    
   }
 
   render() {
     this.container.append(
       this.header.render(),
-      this.section.render(),
+      this.todoList.render(),
       this.footer.render()
     )
 
