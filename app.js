@@ -20,11 +20,10 @@ class Header {
     this.title = creator('h1', 'todos');
     this.form = creator('form', null, 'todo-form');
     this.input = creator('input', null, 'new-todo');
-    this.onSubmit = onSubmit
     this.header.appendChild(this.title)
     this.header.appendChild(this.form)
     this.input.setAttribute('placeholder', 'What needs to be done?')
-    this.form.addEventListener('submit', this.onSubmit);
+    this.form.addEventListener('submit', onSubmit);
     this.form.appendChild(this.input)
   }
   render() {
@@ -32,9 +31,8 @@ class Header {
   }
 }
 
-class toggleAllStatus {
+class ToggleAllStatus {
   constructor(handleToggleAll) {
-    this.handleToggleAll = handleToggleAll
     this.wrapper = creator('div', null)
     this.toggleAllInput = creator('input', null, 'toggle-all')
     this.toggleAllLabel = creator('label', 'Mark all as complete');
@@ -45,7 +43,7 @@ class toggleAllStatus {
     this.arrowImg.setAttribute('src', './arrow-grey.svg')
     this.arrowContainer.appendChild(this.arrowImg)
     this.toggleAllLabel.setAttribute('for', 'toggle-all')
-    this.toggleAllLabel.addEventListener('click', this.handleToggleAll)
+    this.toggleAllLabel.addEventListener('click', handleToggleAll)
     this.wrapper.appendChild(this.toggleAllInput)
     this.wrapper.appendChild(this.toggleAllLabel)
     this.wrapper.appendChild(this.arrowContainer)
@@ -55,16 +53,18 @@ class toggleAllStatus {
 
   toggleAllComplete() {
     if (todos.filter(todo => !todo.completed).length === 0) {
-      todos.forEach(todo => todo.completed = false);
+      todos.map(todo => todo.completed = false);
+      localStorage.setItem('todos', JSON.stringify(todos))
       this.toggleAllInput.setAttribute('checked', true)
       this.arrowImg.setAttribute('src', './arrow-black.svg');
     } else {
-      todos.forEach(todo => todo.completed = true);
+      todos.map(todo => todo.completed = true);
+      localStorage.setItem('todos', JSON.stringify(todos))
       this.toggleAllInput.setAttribute('checked', true)
       this.arrowImg.setAttribute('src', './arrow-black.svg');
     }
 
-    if (todos.filter(todo => todo.completed === false).length !== 0) {
+    if (todos.some(todo => !todo.completed)) {
       this.toggleAllInput.removeAttribute('checked')
       this.arrowImg.setAttribute('src', './arrow-grey.svg');
     }
@@ -73,7 +73,7 @@ class toggleAllStatus {
 
   arrowRender() {
     this.arrowContainer.classList.remove('hidden')
-    if (todos.filter(todo => todo.completed === false).length === 0) {
+    if (!todos.filter(todo => !todo.completed).length) {
       this.toggleAllInput.setAttribute('checked', true)
       this.arrowImg.setAttribute('src', './arrow-black.svg');
     } else {
@@ -83,7 +83,7 @@ class toggleAllStatus {
   }
 
   render() {
-    if(todos.length === 0) {
+    if (!todos.length) {
       this.arrowContainer.classList.add('hidden')
     }
     return this.wrapper
@@ -94,48 +94,16 @@ class TodoList {
     onDelete,
     onChangeStatus,
     handleToggleAll,
+    filter
   ) {
-    this.onChangeTitle = (event) => {
-      const div = event.target.closest('li')
-      div.classList = 'editing'
-      const input = div.querySelector('.edit');
-      setTimeout(() => {
-        input.focus()
-      }, 0)
-      const todo = todos.find(todo => todo.id === +div.dataset.key)
-      input.value = todo.title
-    }
-
-    this.onblur = (event) => {
-      const input = event.target;
-      if (input.closest('.editing')) {
-        if (input.value.trim() !== '') {
-          const todoId = input.closest('li').dataset.key
-          this.changeTitleTodo(todoId, input.value.trim())
-        } else {
-          input.closest('.editing').classList = 'view'
-        }
-      }
-    }
-
-    this.onKeyDown = (event) => {
-      const input = event.target;
-      if (input.value.trim() !== '' && event.keyCode === 13) {
-        const todoId = event.target.closest('li').dataset.key
-        this.changeTitleTodo(todoId, event.target.value.trim())
-      }
-    }
-
-    this.handleToggleAll = handleToggleAll
-    this.onDelete = onDelete
-    this.onChangeStatus = onChangeStatus
-    this.wrapper = new toggleAllStatus(handleToggleAll)
+    this.filter = filter
+    this.toggleAll = new ToggleAllStatus(handleToggleAll)
     this.section = creator('section', null, 'main')
     this.todoList = creator('ul', null, 'todo-list');
-    this.section.appendChild(this.wrapper.render())
+    this.section.appendChild(this.toggleAll.render())
     this.section.appendChild(this.todoList)
-    this.todoList.addEventListener('click', this.onDelete)
-    this.todoList.addEventListener('click', this.onChangeStatus)
+    this.todoList.addEventListener('click', onDelete)
+    this.todoList.addEventListener('click', onChangeStatus)
     this.todoList.addEventListener('dblclick', this.onChangeTitle)
   }
   createLi(todo, blur, keydown) {
@@ -172,27 +140,75 @@ class TodoList {
     return li
   }
 
-  changeTitleTodo(todoId, inputValue) {
-    const index = todos.findIndex(item => item.id === +todoId)
-    todos[index].title = inputValue;
-    localStorage.setItem('todos', JSON.stringify(todos))
-    this.renderList(todos)
+  onChangeTitle = (event) => {
+    const div = event.target.closest('li')
+    div.classList = 'editing'
+    const input = div.querySelector('.edit');
+    setTimeout(() => {
+      input.focus()
+    }, 0)
+    const todo = todos.find(todo => todo.id === +div.dataset.key)
+    input.value = todo.title
   }
+
+  onBlur = (event) => {
+    const input = event.target;
+    if (input.closest('.editing')) {
+      if (input.value.trim() !== '') {
+        const todoId = input.closest('li').dataset.key
+        this.changeTitleTodo(todoId, input.value.trim())
+      } else {
+        input.closest('.editing').classList = 'view'
+      }
+    }
+  }
+
+  onKeyDown = (event) => {
+    const input = event.target;
+    if (input.value.trim() !== '' && event.keyCode === 13) {
+      const todoId = event.target.closest('li').dataset.key
+      this.changeTitleTodo(todoId, event.target.value.trim())
+    }
+  }
+
+  changeTitleTodo(todoId, inputValue) {
+    let copyTodos = JSON.parse(localStorage.getItem('todos'))
+    const index = copyTodos.findIndex(item => item.id === +todoId)
+    copyTodos[index].title = inputValue;
+    localStorage.setItem('todos', JSON.stringify(copyTodos))
+    todos = copyTodos;
+    this.renderList(todos, this.filter)
+  }
+
 
   clearList() {
     this.todoList.innerHTML = ' ';
     // this.todoList.querySelectorAll('*').forEach((n) => n.remove())
   }
 
-  renderList(todos) {
+  renderList(todos, filter) {
     this.clearList()
-    todos.map(todo => {
-      this.todoList.append(this.createLi(todo, this.onblur, this.onKeyDown))
-    })
+    switch (filter) {
+      case 'All':
+        todos.map(todo => {
+          this.todoList.append(this.createLi(todo, this.onBlur, this.onKeyDown))
+        })
+        break;
+      case 'Completed':
+        filterTodo(todos, true).map(todo => {
+          this.todoList.append(this.createLi(todo, this.onBlur, this.onKeyDown))
+        })
+        break
+      case 'Active':
+        filterTodo(todos, false).map(todo => {
+          this.todoList.append(this.createLi(todo, this.onBlur, this.onKeyDown))
+        })
+        break;
+    }
   }
 
   render() {
-    this.renderList(todos)
+    this.renderList(todos, 'All')
     return this.section
   }
 }
@@ -225,7 +241,7 @@ class Count {
   }
 
   countTodo(todos) {
-    const count = todos.filter(todo => todo.completed === false).length
+    const count = todos.filter(todo => !todo.completed).length
     return count
   }
 
@@ -238,7 +254,6 @@ class Count {
     return this.todoCount
   }
 }
-
 
 class Footer {
   constructor(handleClearCompleted, handleFilter) {
@@ -264,6 +279,26 @@ class Footer {
 
   }
 
+  renderFilter(link) {
+    switch (link) {
+      case 'All':
+        this.completed.render().classList.remove('selected')
+        this.active.render().classList.remove('selected')
+        this.all.render().classList.add('selected')
+        break
+      case 'Active':
+        this.all.render().classList.remove('selected')
+        this.completed.render().classList.remove('selected')
+        this.active.render().classList.add('selected')
+        break
+      case 'Completed':
+        this.all.render().classList.remove('selected')
+        this.active.render().classList.remove('selected')
+        this.completed.render().classList.add('selected')
+        break
+    }
+  }
+
   renderCount() {
     this.footer.removeChild(this.footer.firstChild)
     this.todoCount.renderCount()
@@ -279,7 +314,7 @@ class Footer {
   }
 
   render() {
-    if(todos.length === 0) {
+    if (!todos.length) {
       this.footer.classList.add('hidden')
     }
     this.renderClearCompletedButton()
@@ -289,71 +324,7 @@ class Footer {
 
 class App {
   constructor() {
-    this.onSubmit = (event) => {
-      event.preventDefault();
-      const inputValue = event.target.querySelector('.new-todo');
-      if (inputValue.value !== '') {
-        this.addTodo(inputValue.value)
-        inputValue.value = ''
-        inputValue.focus();
-      }
-    }
-
-    this.onDelete = (event) => {
-      if (event.target.classList.contains('destroy')) {
-        const todoId = event.target.closest('li').dataset.key
-        this.deleteTodo(todoId)
-      }
-    }
-
-    this.onChangeStatus = (event) => {
-      if (event.target.classList.contains('toggle')) {
-        const todoId = event.target.closest('li').dataset.key
-        this.changeStatus(todoId)
-      }
-    }
-
-    this.handleToggleAll = (event) => {
-      if (event.target.closest('label')) {
-        this.todoList.wrapper.toggleAllComplete()
-        this.todoList.renderList(todos)
-        this.footer.renderCount()
-        this.footer.renderClearCompletedButton()
-      }
-    }
-
-    this.handleClearCompleted = () => {
-      this.clearCompleted()
-    }
-
-    this.handleFilter = (event) => {
-      const target = event.target.innerText
-      const all = document.querySelector('.all').closest('li')
-      const active = document.querySelector('.active').closest('li')
-      const completed = document.querySelector('.completed').closest('li')
-      switch (target) {
-        case 'Completed':
-          all.classList.remove('selected')
-          active.classList.remove('selected')
-          completed.classList.add('selected')
-          this.todoList.renderList(filterTodo(todos, true))
-          break;
-        case 'Active':
-          all.classList.remove('selected')
-          completed.classList.remove('selected')
-          active.classList.add('selected')
-          this.todoList.renderList(filterTodo(todos, false))
-          break;
-
-        default:
-          completed.classList.remove('selected')
-          active.classList.remove('selected')
-          all.classList.add('selected')
-          this.todoList.renderList(todos)
-          break;
-      }
-    }
-
+    this.filter = 'All'
     this.root = document.getElementById('root')
     this.container = creator('section', null, 'todo-app')
     this.header = new Header(this.onSubmit)
@@ -361,6 +332,7 @@ class App {
       this.onDelete,
       this.onChangeStatus,
       this.handleToggleAll,
+      this.filter
     )
     this.footer = new Footer(this.handleClearCompleted, this.handleFilter)
     this.container.append(
@@ -370,79 +342,124 @@ class App {
     )
   }
 
+  onSubmit = (event) => {
+    event.preventDefault();
+    const inputValue = event.target.querySelector('.new-todo');
+    if (inputValue.value !== '') {
+      this.addTodo(inputValue.value)
+      inputValue.value = ''
+      inputValue.focus();
+    }
+  }
+
+  onDelete = (event) => {
+    if (event.target.classList.contains('destroy')) {
+      const todoId = event.target.closest('li').dataset.key
+      this.deleteTodo(todoId)
+    }
+  }
+
+  onChangeStatus = (event) => {
+    if (event.target.classList.contains('toggle')) {
+      const todoId = event.target.closest('li').dataset.key
+      this.changeStatus(todoId)
+    }
+  }
+
+  handleToggleAll = (event) => {
+    if (event.target.closest('label')) {
+      this.todoList.toggleAll.toggleAllComplete()
+      this.todoList.renderList(todos)
+      this.footer.renderCount()
+      this.footer.renderClearCompletedButton()
+    }
+  }
+
+  handleClearCompleted = () => {
+    this.clearCompleted()
+  }
+
+  handleFilter = (event) => {
+    const target = event.target.innerText
+    switch (target) {
+      case 'Completed':
+        this.filter = 'Completed'
+        this.footer.renderFilter(target)
+        this.todoList.renderList(todos, this.filter)
+        break;
+      case 'Active':
+        this.filter = 'Active'
+        this.footer.renderFilter(target)
+        this.todoList.renderList(todos, this.filter)
+        break;
+
+      case 'All':
+        this.filter = 'All'
+        this.footer.renderFilter(target)
+        this.todoList.renderList(todos, this.filter)
+        break;
+    }
+  }
+
   addTodo(text) {
     const todo = {
       title: text,
       completed: false,
       id: Date.now()
     }
-    todos.push(todo)
+    todos = [...todos, todo]
     localStorage.setItem('todos', JSON.stringify(todos))
-    this.todoList.wrapper.arrowRender()
-    if (document.querySelector('.completed').closest('li').classList.contains('selected')) {
-      this.footer.renderCount()
-    } else if (document.querySelector('.active').closest('li').classList.contains('selected')) {
-      this.todoList.renderList(filterTodo(todos, false))
-      this.footer.renderCount()
-    } else {
-      this.todoList.renderList(todos)
-      this.footer.renderCount()
-    }
+
+    this.todoList.toggleAll.arrowRender()
+    this.todoList.renderList(todos, this.filter)
+    this.footer.renderCount()
+
+
     this.footer.render().classList = 'footer'
   }
 
   changeStatus(todoId) {
+    let copyTodos = JSON.parse(localStorage.getItem('todos'))
     const index = todos.findIndex(item => item.id === +todoId)
-    todos[index].completed = !todos[index].completed;
+    copyTodos[index].completed = !copyTodos[index].completed;
+    todos = copyTodos
     localStorage.setItem('todos', JSON.stringify(todos))
 
-    if (document.querySelector('.completed').closest('li').classList.contains('selected')) {
-      this.todoList.renderList(filterTodo(todos, true))
-      this.footer.renderCount()
-    } else if (document.querySelector('.active').closest('li').classList.contains('selected')) {
-      this.todoList.renderList(filterTodo(todos, false))
-      this.footer.renderCount()
-    } else {
-      this.todoList.renderList(todos)
-      this.footer.renderCount()
-    }
-
+    this.todoList.renderList(todos, this.filter)
+    this.footer.renderCount()
     this.footer.renderClearCompletedButton()
-    this.todoList.wrapper.arrowRender()
+    this.todoList.toggleAll.arrowRender()
   }
 
   deleteTodo(todoId) {
     todos = todos.filter(el => el.id !== +todoId)
     localStorage.setItem('todos', JSON.stringify(todos))
-    this.todoList.renderList(todos)
+    this.todoList.renderList(todos, this.filter)
     this.footer.renderCount()
+    this.todoList.toggleAll.render()
     if (todos.length === 0) {
       document.querySelector('footer').classList = 'hidden'
     }
   }
 
   clearCompleted() {
-    todos = todos.filter(todo => todo.completed === false);
+    todos = todos.filter(todo => !todo.completed);
     localStorage.setItem('todos', JSON.stringify(todos))
-    this.todoList.renderList(todos)
-    if (todos.length === 0) {
-      this.footer.render().classList = 'hidden'
-      document.querySelector('.arrow-container').classList.add('hidden')
-    }
-    if (document.querySelector('.completed').closest('li').classList.contains('selected')) {
-      this.todoList.clearList()
-    } else {
-      this.todoList.renderList(todos)
-      this.footer.renderCount()
+    this.todoList.renderList(todos, this.filter)
+
+    if (!todos.length) {
+      this.footer.render()
+      this.todoList.toggleAll.render()
     }
 
+    this.todoList.renderList(todos, this.filter)
+    this.footer.renderCount()
     this.footer.renderClearCompletedButton()
-
   }
 
   render() {
-    if(todos.length !== 0) {
-      this.todoList.wrapper.arrowRender()
+    if (todos.length) {
+      this.todoList.toggleAll.arrowRender()
     }
     root.appendChild(this.container);
   }
