@@ -318,7 +318,7 @@ class App {
         this.todoList.wrapper.toggleAllComplete()
         this.todoList.renderList(todos)
         this.footer.renderCount()
-        this.footer.renderButton()
+        this.footer.renderClearCompletedButton()
       }
     }
 
