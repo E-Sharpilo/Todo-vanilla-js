@@ -1,4 +1,5 @@
 let todos = JSON.parse(localStorage.getItem('todos')) || [];
+localStorage.setItem('filter', 'All')
 
 function creator(el, content, htmlClass) {
   const container = document.createElement(el)
@@ -94,9 +95,8 @@ class TodoList {
     onDelete,
     onChangeStatus,
     handleToggleAll,
-    filter
   ) {
-    this.filter = filter
+    this.filter = localStorage.getItem('filter')
     this.toggleAll = new ToggleAllStatus(handleToggleAll)
     this.section = creator('section', null, 'main')
     this.todoList = creator('ul', null, 'todo-list');
@@ -177,6 +177,7 @@ class TodoList {
     copyTodos[index].title = inputValue;
     localStorage.setItem('todos', JSON.stringify(copyTodos))
     todos = copyTodos;
+    this.filter = localStorage.getItem('filter')
     this.renderList(todos, this.filter)
   }
 
@@ -208,7 +209,7 @@ class TodoList {
   }
 
   render() {
-    this.renderList(todos, 'All')
+    this.renderList(todos, this.filter)
     return this.section
   }
 }
@@ -324,7 +325,7 @@ class Footer {
 
 class App {
   constructor() {
-    this.filter = 'All'
+    this.filter = localStorage.getItem('filter')
     this.root = document.getElementById('root')
     this.container = creator('section', null, 'todo-app')
     this.header = new Header(this.onSubmit)
@@ -369,7 +370,7 @@ class App {
   handleToggleAll = (event) => {
     if (event.target.closest('label')) {
       this.todoList.toggleAll.toggleAllComplete()
-      this.todoList.renderList(todos)
+      this.todoList.renderList(todos, this.filter)
       this.footer.renderCount()
       this.footer.renderClearCompletedButton()
     }
@@ -383,23 +384,28 @@ class App {
     const target = event.target.innerText
     switch (target) {
       case 'Completed':
-        this.filter = 'Completed'
+        localStorage.setItem('filter', 'Completed')
+        this.filter = localStorage.getItem('filter')
         this.footer.renderFilter(target)
         this.todoList.renderList(todos, this.filter)
         break;
       case 'Active':
-        this.filter = 'Active'
+        localStorage.setItem('filter', 'Active')
+        this.filter = localStorage.getItem('filter')
         this.footer.renderFilter(target)
         this.todoList.renderList(todos, this.filter)
         break;
 
       case 'All':
-        this.filter = 'All'
+        localStorage.setItem('filter', 'All')
+        this.filter = localStorage.getItem('filter')
         this.footer.renderFilter(target)
         this.todoList.renderList(todos, this.filter)
         break;
     }
   }
+
+
 
   addTodo(text) {
     const todo = {
