@@ -1,4 +1,9 @@
-let todos = JSON.parse(localStorage.getItem('todos')) || [];
+let todos = []
+
+const BASE_URL = 'http://localhost:8080/myapi/todos'
+
+const request = (url, method) => fetch(url, method).then(res => res.json())
+
 localStorage.setItem('filter', 'All')
 
 function creator(el, content, htmlClass) {
@@ -54,13 +59,31 @@ class ToggleAllStatus {
 
   toggleAllComplete() {
     if (todos.filter(todo => !todo.completed).length === 0) {
-      todos.map(todo => todo.completed = false);
-      localStorage.setItem('todos', JSON.stringify(todos))
+      const copyTodo = todos
+      copyTodo.forEach(todo => todo.completed = false);
+      copyTodo.forEach(item => {
+        const todo = item
+        todo.completed = false;
+        request(`${BASE_URL}/${todo.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(todo)
+        })
+      })
+      todos = copyTodo
       this.toggleAllInput.setAttribute('checked', true)
       this.arrowImg.setAttribute('src', './arrow-black.svg');
     } else {
-      todos.map(todo => todo.completed = true);
-      localStorage.setItem('todos', JSON.stringify(todos))
+      const copyTodo = todos
+      copyTodo.forEach(todo => todo.completed = true);
+      copyTodo.forEach(item => {
+        const todo = item
+        todo.completed = true;
+        request(`${BASE_URL}/${todo.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(todo)
+        })
+      })
+      todos = copyTodo
       this.toggleAllInput.setAttribute('checked', true)
       this.arrowImg.setAttribute('src', './arrow-black.svg');
     }
@@ -147,7 +170,7 @@ class TodoList {
     setTimeout(() => {
       input.focus()
     }, 0)
-    const todo = todos.find(todo => todo.id === +div.dataset.key)
+    const todo = todos.find(todo => todo.id === div.dataset.key)
     input.value = todo.title
   }
 
@@ -172,10 +195,17 @@ class TodoList {
   }
 
   changeTitleTodo(todoId, inputValue) {
-    let copyTodos = JSON.parse(localStorage.getItem('todos'))
-    const index = copyTodos.findIndex(item => item.id === +todoId)
+    let copyTodos = todos
+    const index = copyTodos.findIndex(item => item.id === todoId)
     copyTodos[index].title = inputValue;
-    localStorage.setItem('todos', JSON.stringify(copyTodos))
+
+    const todo = copyTodos[index];
+
+    request(`${BASE_URL}/${todoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(todo)
+    })
+
     todos = copyTodos;
     this.filter = localStorage.getItem('filter')
     this.renderList(todos, this.filter)
@@ -325,6 +355,16 @@ class Footer {
 
 class App {
   constructor() {
+    request(BASE_URL, {
+      method: 'GET'
+    }).then(data => {
+      todos = data
+      this.container.append(
+        this.todoList.render(),
+        this.footer.render()
+      )
+    })
+
     this.filter = localStorage.getItem('filter')
     this.root = document.getElementById('root')
     this.container = creator('section', null, 'todo-app')
@@ -337,9 +377,7 @@ class App {
     )
     this.footer = new Footer(this.handleClearCompleted, this.handleFilter)
     this.container.append(
-      this.header.render(),
-      this.todoList.render(),
-      this.footer.render()
+      this.header.render()
     )
   }
 
@@ -409,12 +447,17 @@ class App {
 
   addTodo(text) {
     const todo = {
+      id: Date.now().toString(),
       title: text,
       completed: false,
-      id: Date.now()
     }
+
+    request(BASE_URL, {
+      method: 'POST',
+      body: JSON.stringify(todo)
+    })
+
     todos = [...todos, todo]
-    localStorage.setItem('todos', JSON.stringify(todos))
 
     this.todoList.toggleAll.arrowRender()
     this.todoList.renderList(todos, this.filter)
@@ -425,11 +468,15 @@ class App {
   }
 
   changeStatus(todoId) {
-    let copyTodos = JSON.parse(localStorage.getItem('todos'))
-    const index = todos.findIndex(item => item.id === +todoId)
-    copyTodos[index].completed = !copyTodos[index].completed;
-    todos = copyTodos
-    localStorage.setItem('todos', JSON.stringify(todos))
+    const copyTodo = todos;
+    const index = todos.findIndex(item => item.id === todoId)
+    copyTodo[index].completed = !copyTodo[index].completed;
+    const todo = copyTodo[index]
+
+    request(`${BASE_URL}/${todoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(todo)
+    })
 
     this.todoList.renderList(todos, this.filter)
     this.footer.renderCount()
@@ -438,8 +485,13 @@ class App {
   }
 
   deleteTodo(todoId) {
-    todos = todos.filter(el => el.id !== +todoId)
-    localStorage.setItem('todos', JSON.stringify(todos))
+
+    todos = todos.filter(el => el.id !== todoId)
+
+    request(`${BASE_URL}/${todoId}`, {
+      method: 'DELETE'
+    })
+
     this.todoList.renderList(todos, this.filter)
     this.footer.renderCount()
     this.todoList.toggleAll.render()
@@ -449,9 +501,13 @@ class App {
   }
 
   clearCompleted() {
-    todos = todos.filter(todo => !todo.completed);
-    localStorage.setItem('todos', JSON.stringify(todos))
-    this.todoList.renderList(todos, this.filter)
+    const tempArray = todos.filter(todo => todo.completed === true)
+    todos = todos.filter(todo => todo.completed === false)
+    tempArray.forEach((todo) => {
+      request(`${BASE_URL}/${todo.id}`, {
+        method: 'DELETE'
+      })
+    })
 
     if (!todos.length) {
       this.footer.render()
