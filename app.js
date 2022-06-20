@@ -109,6 +109,8 @@ class ToggleAllStatus {
   render() {
     if (!todos.length) {
       this.arrowContainer.classList.add('hidden')
+    } else {
+      this.arrowContainer.classList.remove('hidden')
     }
     return this.wrapper
   }
@@ -192,6 +194,7 @@ class TodoList {
       const todoId = event.target.closest('li').dataset.key
       this.changeTitleTodo(todoId, event.target.value.trim())
     }
+    input.removeEventListener('blur', this.onBlur)
   }
 
   changeTitleTodo(todoId, inputValue) {
@@ -363,6 +366,8 @@ class App {
         this.todoList.render(),
         this.footer.render()
       )
+      this.todoList.toggleAll.render()
+      this.footer.renderCount()
     })
 
     this.filter = localStorage.getItem('filter')
